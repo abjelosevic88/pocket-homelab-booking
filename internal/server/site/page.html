@@ -1,0 +1,178 @@
+{{define "page"}}<!doctype html>
+<html lang="{{.Lang}}" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>{{.Title}}</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/_book/book.css">
+<style>:root{--accent: {{safeCSS .Accent}};}</style>
+</head>
+<body class="{{if .Embed}}embed{{end}}">
+<main class="wrap">
+{{if .Preview}}<p class="preview">{{.W.preview}}</p>{{end}}
+{{if eq .Kind "pick"}}{{template "pick" .}}
+{{else if eq .Kind "details"}}{{template "details" .}}
+{{else if eq .Kind "manage"}}{{template "manage" .}}
+{{else if eq .Kind "cancel"}}{{template "cancel" .}}
+{{else if eq .Kind "moveto"}}{{template "moveto" .}}
+{{else if eq .Kind "person"}}{{template "person" .}}
+{{else}}{{template "message" .}}{{end}}
+{{if and .Branding (not .Embed)}}<p class="made"><a href="https://github.com/abjelosevic88/pocket-homelab-booking" rel="noopener">{{.W.made}}</a></p>{{end}}
+</main>
+</body>
+</html>{{end}}
+
+{{define "head"}}
+<header class="head">
+  {{if .Type}}{{if .Type.Emoji}}<div class="emoji">{{.Type.Emoji}}</div>{{end}}{{end}}
+  <div>
+    {{if .Owner}}<p class="owner">{{.Owner}}</p>{{end}}
+    <h1>{{.Title}}</h1>
+    <p class="facts">
+      {{if .MinLabel}}<span>⏱ {{.MinLabel}}</span>{{end}}
+      {{if .Where}}<span>📍 {{.Where}}</span>{{end}}
+      {{if .Price}}<span>💳 {{.Price}}</span>{{end}}
+    </p>
+  </div>
+</header>
+{{end}}
+
+{{define "pick"}}
+<section class="card">
+{{template "head" .}}
+{{if .Desc}}<div class="desc">{{range paras .Desc}}<p>{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</p>{{end}}</div>{{end}}
+{{if .ForWhom}}<p class="note">{{.ForWhom}}</p>{{end}}
+{{if .Moving}}<p class="note">{{.W.moving}}</p>{{end}}
+{{if .Notice}}<p class="notice{{if .Bad}} bad{{end}}">{{.Notice}}</p>{{end}}
+{{if .Lengths}}<nav class="lengths" aria-label="{{.W.how_long}}"><span class="lbl">{{.W.how_long}}</span>{{range .Lengths}}<a href="{{.URL}}" class="pill{{if .On}} on{{end}}">{{.Label}}</a>{{end}}</nav>{{end}}
+<div class="pick">
+  <div class="month">
+    <div class="month-head">
+      {{if .PrevURL}}<a class="nav" href="{{.PrevURL}}" aria-label="{{.W.prev}}">‹</a>{{else}}<span class="nav off">‹</span>{{end}}
+      <h2>{{.MonthLabel}}</h2>
+      {{if .NextURL}}<a class="nav" href="{{.NextURL}}" aria-label="{{.W.next}}">›</a>{{else}}<span class="nav off">›</span>{{end}}
+    </div>
+    <table class="cal" role="grid">
+      <thead><tr>{{range .DayNames}}<th>{{.}}</th>{{end}}</tr></thead>
+      <tbody>{{range .Weeks}}<tr>{{range .}}<td>{{if .Blank}}{{else if .Free}}<a href="{{.URL}}" class="d free{{if .Selected}} sel{{end}}{{if .Today}} today{{end}}">{{.Day}}</a>{{else}}<span class="d{{if .Today}} today{{end}}">{{.Day}}</span>{{end}}</td>{{end}}</tr>{{end}}</tbody>
+    </table>
+  </div>
+  <div class="times">
+    {{if .DayLabel}}<h2>{{.DayLabel}}</h2>
+      {{if .Slots}}<div class="slots">{{range .Slots}}<a class="slot" href="{{.URL}}">{{.Label}}{{if .Seats}}<small>{{printf $.W.places_left .Seats}}</small>{{end}}</a>{{end}}</div>
+      {{else}}<p class="muted">{{.W.no_times_day}}</p>{{end}}
+    {{else}}<p class="muted">{{.W.no_times}}</p>{{end}}
+  </div>
+</div>
+<form class="tz" method="get" action="">
+  <span class="muted">{{printf .W.times_in .TZ}}</span>
+  <label class="tzpick"><span class="sr">{{.W.change_tz}}</span>
+  <select name="tz" aria-label="{{.W.change_tz}}">{{range .TZs}}<option value="{{.}}"{{if eq . $.TZ}} selected{{end}}>{{.}}</option>{{end}}</select></label>
+  {{range $k, $v := .TZForm}}<input type="hidden" name="{{$k}}" value="{{$v}}">{{end}}
+  <button type="submit" class="btn small">{{.W.show}}</button>
+</form>
+</section>
+{{end}}
+
+{{define "details"}}
+<section class="card">
+{{template "head" .}}
+<p class="when"><a class="back" href="{{.BackURL}}">‹ {{.W.back}}</a> <strong>{{.When}}</strong> <span class="muted">({{.TZ}})</span></p>
+{{if .Notice}}<p class="notice{{if .Bad}} bad{{end}}">{{.Notice}}</p>{{end}}
+<form method="post" action="{{.Action}}" class="form" novalidate>
+  {{range $k, $v := .Hidden}}{{if $v}}<input type="hidden" name="{{$k}}" value="{{$v}}">{{end}}{{end}}
+  <input type="hidden" name="stamp" value="{{.Stamp}}">
+  <div class="hp" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+  <h2>{{.W.details}}</h2>
+  <label class="field{{with index .Errs "name"}} err{{end}}"><span class="lbl">{{.W.name}}</span>
+    <input type="text" name="name" value="{{.Name}}" autocomplete="name" required maxlength="200">
+    {{with index .Errs "name"}}<span class="e">{{.}}</span>{{end}}</label>
+  <label class="field{{with index .Errs "email"}} err{{end}}"><span class="lbl">{{.W.email}}</span>
+    <input type="email" name="email" value="{{.Email}}" autocomplete="email" required maxlength="200"{{if .EmailFixed}} readonly{{end}}>
+    {{with index .Errs "email"}}<span class="e">{{.}}</span>{{end}}</label>
+  {{if ne .AskPhone "no"}}<label class="field{{with index .Errs "phone"}} err{{end}}"><span class="lbl">{{.W.phone}}{{if eq .AskPhone "optional"}} <em>({{.W.optional}})</em>{{end}}</span>
+    <input type="tel" name="phone" value="{{.Phone}}" autocomplete="tel" maxlength="40">
+    {{with index .Errs "phone"}}<span class="e">{{.}}</span>{{end}}</label>{{end}}
+  {{if .AskWhere}}<label class="field{{with index .Errs "where"}} err{{end}}"><span class="lbl">{{.W.where_q}}</span>
+    <input type="text" name="where" value="{{.WhereVal}}" maxlength="500">
+    {{with index .Errs "where"}}<span class="e">{{.}}</span>{{end}}</label>{{end}}
+  {{range .Fields}}
+  <div class="field{{if .Error}} err{{end}}">
+    <span class="lbl">{{.Label}}{{if not .Required}} <em>({{$.W.optional}})</em>{{end}}</span>
+    {{if .Help}}<span class="help">{{.Help}}</span>{{end}}
+    {{if eq .Type "long"}}<textarea name="{{.ID}}" rows="4" maxlength="5000">{{.Value}}</textarea>
+    {{else if eq .Type "choice"}}<div class="opts">{{$f := .}}{{range .Options}}<label class="opt"><input type="radio" name="{{$f.ID}}" value="{{.}}"{{if has $f.Checked .}} checked{{end}}> {{.}}</label>{{end}}</div>
+    {{else if eq .Type "checkboxes"}}<div class="opts">{{$f := .}}{{range .Options}}<label class="opt"><input type="checkbox" name="{{$f.ID}}" value="{{.}}"{{if has $f.Checked .}} checked{{end}}> {{.}}</label>{{end}}</div>
+    {{else if eq .Type "yesno"}}<div class="opts row"><label class="opt"><input type="radio" name="{{.ID}}" value="yes"{{if eq .Value "yes"}} checked{{end}}> {{$.W.yes}}</label><label class="opt"><input type="radio" name="{{.ID}}" value="no"{{if eq .Value "no"}} checked{{end}}> {{$.W.no}}</label></div>
+    {{else}}<input type="{{.Input}}" name="{{.ID}}" value="{{.Value}}" maxlength="5000"{{if eq .Type "number"}} inputmode="decimal"{{end}}>{{end}}
+    {{if .Error}}<span class="e">{{.Error}}</span>{{end}}
+  </div>
+  {{end}}
+  {{if .ShowPayNote}}<div class="paynote"><strong>{{.W.pay}}</strong>{{range paras .PayNote}}<p>{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</p>{{end}}</div>{{end}}
+  <button type="submit" class="btn primary big">{{.SubmitLabel}}</button>
+</form>
+</section>
+{{end}}
+
+{{define "facts"}}
+<dl class="lines">{{range .Lines}}<div><dt>{{index . 0}}</dt><dd>{{index . 1}}</dd></div>{{end}}</dl>
+{{end}}
+
+{{define "manage"}}
+<section class="card center">
+<div class="status">
+  <h1>{{.StatusTitle}}</h1>
+  {{if .StatusText}}<p class="muted">{{.StatusText}}</p>{{end}}
+</div>
+<h2 class="booking-title">{{if .Type}}{{if .Type.Emoji}}{{.Type.Emoji}} {{end}}{{end}}{{.Title}}</h2>
+{{template "facts" .}}
+{{if .ShowPayNote}}<div class="paynote"><strong>{{.W.pay}}</strong>{{range paras .PayNote}}<p>{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</p>{{end}}</div>{{end}}
+<div class="actions">
+  {{if .MeetingURL}}<a class="btn primary" href="{{.MeetingURL}}" rel="noopener" target="_blank">{{.W.join}}</a>{{end}}
+  {{if .CanChange}}<a class="btn" href="{{.ICSURL}}">{{.W.add_cal}}</a>
+  {{if .MoveURL}}<a class="btn" href="{{.MoveURL}}">{{.W.move}}</a>{{end}}
+  <a class="btn danger" href="{{.CancelURL}}">{{.W.cancel}}</a>
+  {{else if .BookAgainURL}}<a class="btn" href="{{.BookAgainURL}}">{{.W.book_again}}</a>{{end}}
+</div>
+</section>
+{{end}}
+
+{{define "cancel"}}
+<section class="card center">
+<h1>{{.W.cancel}}</h1>
+{{template "facts" .}}
+<form method="post" action="{{.CancelURL}}" class="form">
+  <label class="field"><span class="lbl">{{.W.cancel_why}}</span><textarea name="reason" rows="3" maxlength="2000"></textarea></label>
+  <div class="actions"><button type="submit" class="btn danger">{{.W.cancel_yes}}</button><a class="btn" href="{{.ManageURL}}">{{.W.keep}}</a></div>
+</form>
+</section>
+{{end}}
+
+{{define "moveto"}}
+<section class="card center">
+<h1>{{.W.moved_title}}?</h1>
+<p class="when"><strong>{{.When}}</strong></p>
+<form method="post" action="{{.ConfirmAction}}" class="form">
+  {{range $k, $v := .Hidden}}<input type="hidden" name="{{$k}}" value="{{$v}}">{{end}}
+  <div class="actions"><button type="submit" class="btn primary">{{.W.move}}</button><a class="btn" href="{{.BackURL}}">{{.W.back}}</a></div>
+</form>
+</section>
+{{end}}
+
+{{define "person"}}
+<section class="card">
+<header class="head"><div><h1>{{.Title}}</h1>{{if .PersonIntro}}{{range paras .PersonIntro}}<p class="muted">{{range $i, $l := .}}{{if $i}}<br>{{end}}{{$l}}{{end}}</p>{{end}}{{end}}</div></header>
+{{if .Pages}}<ul class="pages">{{range .Pages}}<li><a href="{{.URL}}"><span class="pe">{{if .Emoji}}{{.Emoji}}{{else}}📅{{end}}</span><span class="pt"><strong>{{.Title}}</strong><small>{{.Length}}{{if .Desc}} · {{.Desc}}{{end}}</small></span><span class="go">›</span></a></li>{{end}}</ul>
+{{else}}<p class="muted">{{.W.no_pages}}</p>{{end}}
+</section>
+{{end}}
+
+{{define "message"}}
+<section class="card center">
+<h1>{{if .StatusTitle}}{{.StatusTitle}}{{else}}{{.Title}}{{end}}</h1>
+{{if .Message}}<p class="muted">{{.Message}}</p>{{end}}
+</section>
+{{end}}
