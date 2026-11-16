@@ -597,3 +597,5 @@ a.fc-num:hover { color: var(--accent-ink); }
 
 /* cards on the Booking pages carry their own padding */
 .page > .card:not(.flush):not(.ai-start), .two-grid > .card { padding: 16px 18px; }
+
+.kv dd > a { display: inline-flex; align-items: center; gap: 4px; }
