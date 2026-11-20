@@ -106,7 +106,7 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "that is not a Pocket Booking export")
 			return
 		}
-		writeJSON(w, http.StatusOK, s.importPocket(ctx, uid, doc))
+		writeJSON(w, http.StatusOK, importResult(s.importPocket(ctx, uid, doc)))
 		return
 	}
 	out, err := s.importCSV(ctx, uid, data)
@@ -114,7 +114,22 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, importResult(out))
+}
+
+// importResult repeats the added counts at the top level (what Pocket Move
+// shows) next to the nested ones the page reads, with their total.
+func importResult(out map[string]any) map[string]any {
+	added, _ := out["added"].(map[string]int)
+	total := 0
+	for k, v := range added {
+		if _, taken := out[k]; !taken {
+			out[k] = v
+		}
+		total += v
+	}
+	out["imported"] = total
+	return out
 }
 
 func (s *Server) importPocket(ctx context.Context, uid int64, doc exportDoc) map[string]any {

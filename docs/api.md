@@ -112,5 +112,9 @@ Owner-only (not open to links): booking pages (`/types…` beyond the above), `/
 `PUT`/`DELETE /bookings/{id}`, `/bookings/{id}/(decline|done|no-show|paid|make)`, `/bookings/{id}/ai/prep`,
 `/insights`, `/apps`, settings, users, tokens, backup, `export.json`, `import`.
 
+Pocket Move can copy your hours, booking pages and bookings out and bring them in: `GET /pocket/portable` describes
+`export.json` (link scope `move:export`) and `POST /import` (`move:import`; a Pocket Booking export or a Calendly /
+Cal.com CSV, multipart `file`). Imports only add; a second run of the same file adds nothing.
+
 Public pages (no account): `/p/<page handle>` (a person's pages), `/b/<handle>` (pick a time), `/b/<handle>/book`
 (details), `/m/<token>` (the guest's booking: add to calendar `.ics`, move, cancel), `/i/<token>` (a personal link).
